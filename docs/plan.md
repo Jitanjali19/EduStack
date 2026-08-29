@@ -1,67 +1,64 @@
-# Plan
+# Project Plan & Progress
 
-We are building this project in simple steps so it is easier to finish on time.
+This document outlines the step-by-step development process of the course platform.
 
-## Phase 1: Setup
+---
 
-- Install backend and frontend basics
-- Set up environment variables
-- Connect MongoDB
-- Start the server and check the health route
+## Phase 1: Foundation (Completed)
 
-## Phase 2: User login and roles
+- [x] Set up backend Express server and folder structure
+- [x] Configure environment variables (`.env`, `.env.example`)
+- [x] Connect MongoDB with connection status and error handling
+- [x] Health check endpoint (`GET /api/health`)
 
-- Register users
-- Login users
-- Create instructor and learner roles
-- Protect routes with JWT and backend checks
+---
 
-## Phase 3: Courses and lessons
+## Phase 2: Core App Logic (Completed)
 
-- Create course
-- Edit course
-- Publish course only when it has at least one lesson
-- Archive and restore course
-- Add, update, reorder, and delete lessons
+- [x] **User Registration & Login**: Password hashing with `bcryptjs` and token creation with `jsonwebtoken`
+- [x] **Role-Based Access**: Middleware enforcing `instructor` vs `learner` permissions on protected routes
+- [x] **Course Management (CRUD)**: Create course, edit details, archive, and restore
+- [x] **Course Publish Rule**: Prevent publishing a course that has 0 lessons (Goal 4)
+- [x] **Lesson Management**: Add, update, delete, and reorder lessons with sequential position numbering
 
-## Phase 4: Enrollment and progress
+---
 
-- Learner enrolls in published course
-- Track progress per learner per course
-- Move status from not started to in progress to completed
-- Show learner course list
+## Phase 3: Enrollment & Progress Tracking (Completed)
 
-## Phase 5: Dashboard and alerts
+- [x] **3.1 Enrollment Model & Routes**: 
+  - Compound unique index (`userId` + `courseId`) to prevent duplicate enrollments
+  - Enforce enrollment only on `published` courses (reject `draft` or `archived`)
+  - Learner self-enrollment and instructor-managed enrollment
+- [x] **3.2 Progress Tracking**:
+  - State machine: `not_started` -> `in_progress` -> `completed`
+  - Rejection of invalid backwards state transitions
+  - Tracking `lastActivityAt` on every action for inactivity alerts (Goal 10)
+- [x] **3.3 Course Completion Rules**:
+  - Course only completes when all lessons in the course are finished
+  - Automatic `completedAt` timestamp recording
+  - Immutable activity history logging for all course events (Goal 9)
+- [x] **3.4 Finding Courses & Enrollment Filtering (Goal 6)**:
+  - 100% server-side search over titles and descriptions
+  - Server-side filtering by category, status (instructors only), and instructor
+  - Dynamic sorting by title, creation date, or total enrollment count
+  - Pagination with total match counts
 
-- Show total learners and total courses
-- Show progress and completion numbers
-- Show alerts for inactive learners
-- Show activity log and course history
+---
 
-## Phase 6: Final work
+## Phase 4: Reporting, Bulk Actions & Alerts (Next)
 
-- Fix bugs and test backend flow
-- Clean the code
-- Update docs
-- Prepare submission files
+- [ ] **4.1 Dashboard Metrics (Goal 8)**: Total learners, published courses, completions this month, in-progress count, 8-week completion trend
+- [ ] **4.2 Bulk Enrollment (Goal 7)**: Paste/upload email addresses with per-address result report (`unknown`, `already_enrolled`, `enrolled`)
+- [ ] **4.3 CSV Export (Goal 7)**: Export progress of all enrolled learners in a course as a downloadable CSV
+- [ ] **4.4 Inactive Learner Alerts (Goal 10)**: Detect learners in `in_progress` with no activity for >14 days; badge count and dismiss/reappear flow
 
-## Why this order
+---
 
-This order matters because the app depends on login first, then courses, then enrollment, and only then dashboards and alerts. If the base is weak, later features become messy.
+## Phase 5: Frontend UI & Final Polish
 
-## What we cut if time is short
-
-We will not cut the required 10 goals. We will only delay stretch features like:
-
-- quiz system
-- certificates
-- discussion threads
-- extra analytics
-
-## Simple timeline
-
-- First days: setup, login, roles, courses
-- Middle days: lessons, enrollment, progress
-- Final days: dashboard, alerts, cleanup, docs
-
-This keeps the project realistic and makes it easier to finish before the deadline.
+- [ ] Connect React frontend with modern UI design
+- [ ] Authentication views (Login / Register)
+- [ ] Instructor Course Studio & Lesson Builder
+- [ ] Learner Course Catalog & Lesson Viewer
+- [ ] Dashboard & Alerts UI
+- [ ] Final testing, demo credentials, and submission documentation
