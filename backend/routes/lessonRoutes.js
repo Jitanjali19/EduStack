@@ -1,9 +1,18 @@
 const express = require('express');
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
+const ActivityLog = require('../models/ActivityLog');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 const router = express.Router();
+
+const logLessonAction = async (courseId, actorId, action, details) => {
+  try {
+    await ActivityLog.create({ courseId, actorId, action, details });
+  } catch (err) {
+    console.error('Failed to write activity log:', err.message);
+  }
+};
 
 const ensureCourseOwnership = async (req, res, next) => {
   try {
@@ -66,7 +75,7 @@ router.post('/course/:courseId', protect, authorize('instructor'), ensureCourseO
       return res.status(400).json({ message: 'Lesson title and content are required' });
     }
 
-    const position = await Lesson.countDocuments({ courseId: req.params.courseId }) + 1;
+    const position = (await Lesson.countDocuments({ courseId: req.params.courseId })) + 1;
 
     const lesson = await Lesson.create({
       courseId: req.params.courseId,
@@ -74,6 +83,8 @@ router.post('/course/:courseId', protect, authorize('instructor'), ensureCourseO
       content,
       position,
     });
+
+    await logLessonAction(req.params.courseId, req.user._id, 'lesson_add', `Added lesson #${position}: '${title}'`);
 
     res.status(201).json({ message: 'Lesson created', lesson });
   } catch (error) {
@@ -94,6 +105,9 @@ router.put('/course/:courseId/:lessonId', protect, authorize('instructor'), ensu
     if (content) lesson.content = content;
 
     await lesson.save();
+
+    await logLessonAction(req.params.courseId, req.user._id, 'lesson_edit', `Updated lesson: '${lesson.title}'`);
+
     res.json({ message: 'Lesson updated', lesson });
   } catch (error) {
     res.status(500).json({ message: 'Failed to update lesson' });
@@ -108,8 +122,11 @@ router.delete('/course/:courseId/:lessonId', protect, authorize('instructor'), e
       return res.status(404).json({ message: 'Lesson not found' });
     }
 
+    const lessonTitle = lesson.title;
     await lesson.deleteOne();
     await normalizeLessonPositions(req.params.courseId);
+
+    await logLessonAction(req.params.courseId, req.user._id, 'lesson_delete', `Deleted lesson: '${lessonTitle}'`);
 
     res.json({ message: 'Lesson deleted' });
   } catch (error) {
@@ -136,6 +153,8 @@ router.patch('/course/:courseId/reorder', protect, authorize('instructor'), ensu
       lesson.position = i + 1;
       await lesson.save();
     }
+
+    await logLessonAction(req.params.courseId, req.user._id, 'lesson_edit', `Reordered lessons in course`);
 
     const updatedLessons = await Lesson.find({ courseId: req.params.courseId }).sort({ position: 1, createdAt: 1 });
     res.json({ message: 'Lessons reordered', lessons: updatedLessons });
