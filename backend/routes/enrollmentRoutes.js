@@ -15,8 +15,6 @@ const ALLOWED_STATUS_TRANSITIONS = {
   completed: [],
 };
 
-// @route   POST /api/enrollments/enroll/:courseId
-// @desc    Enroll in a published course
 router.post('/enroll/:courseId', protect, async (req, res) => {
   try {
     const { courseId } = req.params;
@@ -76,8 +74,6 @@ router.post('/enroll/:courseId', protect, async (req, res) => {
   }
 });
 
-// @route   GET /api/enrollments/my-courses
-// @desc    Get all courses the logged-in learner is enrolled in with search/filter/pagination
 router.get('/my-courses', protect, async (req, res) => {
   try {
     const { status, search, page = 1, limit = 10 } = req.query;
@@ -123,8 +119,6 @@ router.get('/my-courses', protect, async (req, res) => {
   }
 });
 
-// @route   GET /api/enrollments/course/:courseId
-// @desc    Get enrollment details / roster for a course with search, filter, and pagination
 router.get('/course/:courseId', protect, async (req, res) => {
   try {
     const { courseId } = req.params;
@@ -203,8 +197,6 @@ router.get('/course/:courseId', protect, async (req, res) => {
   }
 });
 
-// @route   PATCH /api/enrollments/course/:courseId/lesson/:lessonId/complete
-// @desc    Mark a lesson completed & apply course completion rules
 router.patch('/course/:courseId/lesson/:lessonId/complete', protect, async (req, res) => {
   try {
     const { courseId, lessonId } = req.params;
@@ -280,8 +272,6 @@ router.patch('/course/:courseId/lesson/:lessonId/complete', protect, async (req,
   }
 });
 
-// @route   PATCH /api/enrollments/course/:courseId/status
-// @desc    Direct progress state transition with strict completion validation rules
 router.patch('/course/:courseId/status', protect, async (req, res) => {
   try {
     const { courseId } = req.params;

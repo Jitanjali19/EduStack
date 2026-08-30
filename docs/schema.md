@@ -1,138 +1,116 @@
-# Schema
+# Database Schema Documentation
 
-This is the current database structure for the course platform. The idea is simple: users sign in, instructors create courses and lessons, learners enroll, and the app tracks progress and alerts.
+This document describes the schema design, field types, relationships, constraints, denormalization choices, and scale limitations of the course platform database.
 
-## 1. User
+---
 
-| Field     | Type     | Notes                     |
-| --------- | -------- | ------------------------- |
-| \_id      | ObjectId | Unique MongoDB id         |
-| name      | String   | Full name of the user     |
-| email     | String   | Unique email address      |
-| password  | String   | Hashed password           |
-| role      | String   | `instructor` or `learner` |
-| createdAt | Date     | When account was created  |
-| updatedAt | Date     | Last update time          |
+## 1. Tables (Collections), Columns, & Types
 
-### Relationship
+### 1.1 User
 
-- One user can teach many courses.
-- One user can enroll in many courses.
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `_id` | ObjectId | Primary Key | Unique user identifier |
+| `name` | String | Required, Trimmed | Full name of the user |
+| `email` | String | Required, Unique, Lowercase | User email address used for login and bulk enrollment |
+| `password` | String | Required | Bcrypt hashed password |
+| `role` | String | Enum (`instructor`, `learner`), Default: `learner` | System role |
+| `createdAt` | Date | Auto Timestamp | Account creation timestamp |
+| `updatedAt` | Date | Auto Timestamp | Last modification timestamp |
 
-## 2. Course
+### 1.2 Course
 
-| Field       | Type     | Notes                            |
-| ----------- | -------- | -------------------------------- |
-| \_id        | ObjectId | Unique course id                 |
-| title       | String   | Course title                     |
-| description | String   | Course summary                   |
-| category    | String   | Example: Web Development         |
-| status      | String   | `draft`, `published`, `archived` |
-| instructor  | ObjectId | Refers to User                   |
-| createdAt   | Date     | Course created date              |
-| updatedAt   | Date     | Last update date                 |
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `_id` | ObjectId | Primary Key | Unique course identifier |
+| `title` | String | Required, Trimmed | Course title |
+| `description` | String | Required, Trimmed | Course detailed description |
+| `category` | String | Required, Trimmed | Category string |
+| `status` | String | Enum (`draft`, `published`, `archived`), Default: `draft` | Course lifecycle state |
+| `instructor` | ObjectId | Ref -> User, Required | Foreign key to User document |
+| `createdAt` | Date | Auto Timestamp | Course creation timestamp |
+| `updatedAt` | Date | Auto Timestamp | Last modification timestamp |
 
-### Relationship
+### 1.3 Lesson
 
-- One instructor can create many courses.
-- One course can have many lessons.
-- One course can have many enrollments.
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `_id` | ObjectId | Primary Key | Unique lesson identifier |
+| `courseId` | ObjectId | Ref -> Course, Required | Foreign key to Course document |
+| `title` | String | Required, Trimmed | Lesson title |
+| `content` | String | Required, Trimmed | Lesson content text or markdown |
+| `position` | Number | Required | Sequential position order inside the course |
+| `createdAt` | Date | Auto Timestamp | Lesson creation timestamp |
+| `updatedAt` | Date | Auto Timestamp | Last modification timestamp |
 
-## 3. Lesson
+### 1.4 Enrollment (Progress Tracking)
 
-| Field     | Type     | Notes                          |
-| --------- | -------- | ------------------------------ |
-| \_id      | ObjectId | Unique lesson id               |
-| courseId  | ObjectId | Refers to Course               |
-| title     | String   | Lesson title                   |
-| content   | String   | Lesson text or description     |
-| position  | Number   | Lesson order inside the course |
-| createdAt | Date     | Created date                   |
-| updatedAt | Date     | Last update                    |
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `_id` | ObjectId | Primary Key | Unique enrollment identifier |
+| `userId` | ObjectId | Ref -> User, Required | Foreign key to User document |
+| `courseId` | ObjectId | Ref -> Course, Required | Foreign key to Course document |
+| `status` | String | Enum (`not_started`, `in_progress`, `completed`), Default: `not_started` | Learner progress state |
+| `completedLessons` | Array of ObjectIds | Ref -> Lesson | Denormalized list of completed lesson IDs |
+| `enrolledAt` | Date | Default: Date.now | Timestamp when learner was enrolled |
+| `lastActivityAt` | Date | Default: Date.now | Timestamp of learner's last lesson activity |
+| `completedAt` | Date | Default: null | Timestamp when course was completed |
+| `dismissedAt` | Date | Default: null | Timestamp when instructor dismissed inactivity alert |
+| `createdAt` | Date | Auto Timestamp | Document creation timestamp |
+| `updatedAt` | Date | Auto Timestamp | Document modification timestamp |
 
-### Relationship
+**Indexes**: Compound unique index `{ userId: 1, courseId: 1 }` prevents duplicate enrollments.
 
-- One course can have many lessons.
-- Each lesson belongs to exactly one course.
+### 1.5 ActivityLog
 
-## 4. Enrollment / Progress
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `_id` | ObjectId | Primary Key | Unique log entry identifier |
+| `courseId` | ObjectId | Ref -> Course, Required | Foreign key to Course document |
+| `actorId` | ObjectId | Ref -> User, Required | User who performed the action |
+| `action` | String | Enum (`create`, `edit`, `publish`, `archive`, `restore`, `lesson_add`, `lesson_edit`, `lesson_delete`, `enrolled`, `completed`, `comment`) | Action type |
+| `details` | String | Default: '' | Description of the action |
+| `createdAt` | Date | Immutable Timestamp | Event log timestamp |
 
-| Field          | Type     | Notes                                     |
-| -------------- | -------- | ----------------------------------------- |
-| \_id           | ObjectId | Unique id                                 |
-| userId         | ObjectId | Refers to User                            |
-| courseId       | ObjectId | Refers to Course                          |
-| status         | String   | `not_started`, `in_progress`, `completed` |
-| enrolledAt     | Date     | When learner joined                       |
-| completedAt    | Date     | Null until course ends                    |
-| lastActivityAt | Date     | Last action date                          |
-| createdAt      | Date     | Record created                            |
-| updatedAt      | Date     | Last change                               |
+---
 
-### Relationship
+## 2. Relationships
 
-- One learner can be enrolled in many courses.
-- One course can have many learners.
-- This is a many-to-many table.
+- **One-to-Many**:
+  - `User` (Instructor) -> `Course` (One instructor teaches many courses)
+  - `Course` -> `Lesson` (One course contains many ordered lessons)
+  - `Course` -> `ActivityLog` (One course has many immutable activity log events)
+- **Many-to-Many**:
+  - `User` (Learner) <-> `Course` (Managed via `Enrollment` join model)
 
-## 5. Activity Log
+---
 
-| Field     | Type     | Notes                                   |
-| --------- | -------- | --------------------------------------- |
-| \_id      | ObjectId | Unique id                               |
-| courseId  | ObjectId | Course affected                         |
-| actorId   | ObjectId | User who performed action               |
-| action    | String   | Example: create, edit, publish, archive |
-| details   | String   | Extra information                       |
-| createdAt | Date     | Time of event                           |
+## 3. Database vs Application Constraints
 
-### Purpose
+### Database Constraints (MongoDB & Mongoose Schema)
+- Unique index on `User.email` prevents duplicate registrations.
+- Compound unique index on `Enrollment.{ userId, courseId }` prevents duplicate course enrollments.
+- Schema enums for `User.role`, `Course.status`, `Enrollment.status`, and `ActivityLog.action`.
+- Schema level required fields and type casting.
+- Mongoose middleware hooks on `ActivityLog` blocking `updateOne`, `updateMany`, `deleteOne`, and `deleteMany` to enforce immutability.
 
-- Keeps a history of course changes.
-- This log should not be edited or deleted later.
+### Application Constraints (Backend Express Layer)
+- **Publishing Rule**: Cannot publish a course with 0 lessons. Verified by `Lesson.countDocuments({ courseId })`.
+- **Progress Machine Rule**: Forward-only transition (`not_started` -> `in_progress` -> `completed`). Rejects backwards or illegal jumps.
+- **Course Completion Validation**: Marking a course completed requires all lessons in the course to be present in `completedLessons`.
+- **Role Permissions**: Learners cannot create/edit courses or view other learners' progress; Instructors cannot enroll in unpublished courses.
+- **Alert Reappearance**: Alerts reappear when `lastActivityAt > dismissedAt` after 14 days of quiet time.
 
-## 6. Alert
+---
 
-| Field       | Type     | Notes                        |
-| ----------- | -------- | ---------------------------- |
-| \_id        | ObjectId | Unique id                    |
-| userId      | ObjectId | Learner involved             |
-| courseId    | ObjectId | Course involved              |
-| status      | String   | `active` or `dismissed`      |
-| triggeredAt | Date     | When alert started           |
-| dismissedAt | Date     | When instructor dismissed it |
-| lastSeenAt  | Date     | Last learner activity seen   |
-| createdAt   | Date     | Alert creation date          |
+## 4. Deliberately Denormalized Data
 
-### Purpose
+- `Enrollment.completedLessons`: Storing an array of completed `Lesson` ObjectIds directly inside the `Enrollment` document avoids creating a separate `LessonCompletion` join table for every learner-lesson pair. This speeds up progress percentage calculations and single-query status updates.
 
-- Shows learners who are inactive for too long.
-- Instructor can dismiss and later it may reappear.
+---
 
-## Database rules
+## 5. What Would Break First at 100x Data?
 
-These rules live in MongoDB and app logic:
-
-- email must be unique in User
-- role must be either instructor or learner
-- course status must be one of the allowed values
-- each lesson is tied to one course
-- enrollment belongs to one user and one course
-
-## App rules
-
-These are managed in the backend code:
-
-- only instructor can create or edit courses
-- publish is blocked if the course has no lesson
-- learner progress moves in order
-- learner cannot see other learners' progress
-- instructor sees inactive learner alerts
-
-## Simple summary
-
-The app is basically built around this flow:
-
-User -> Course -> Lesson -> Enrollment -> Progress -> Alert
-
-This keeps the project easy to scale and easy to understand.
+1. **Course Search Regex Matching**: `RegExp` regex search over course titles and descriptions will become slow without a MongoDB Text Index (`$text` index).
+2. **Inactivity Alert Scanning**: Scanning all `in_progress` enrollments with JavaScript filtering for 14-day inactivity across millions of rows will degrade. Adding a compound index `{ courseId: 1, status: 1, lastActivityAt: 1 }` will be necessary.
+3. **Weekly Completion Trend Bucketing**: Calculating 8-week completion trends in JS memory will reach memory limits. Transitioning to a native MongoDB Aggregation Pipeline `$bucket` operation will resolve this.

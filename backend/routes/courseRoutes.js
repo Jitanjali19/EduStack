@@ -15,8 +15,6 @@ const logCourseAction = async (courseId, actorId, action, details) => {
   }
 };
 
-// @route   GET /api/courses
-// @desc    Finding courses with search, filters (category, status, instructor), sorting (title, createdAt, enrollmentCount), and pagination (Goal 6)
 router.get('/', protect, async (req, res) => {
   try {
     const {
@@ -36,7 +34,6 @@ router.get('/', protect, async (req, res) => {
 
     const matchFilter = {};
 
-    // Goal 6: Learners see published courses; Instructors see all (draft, published, archived) or filter by status
     if (req.user.role === 'learner') {
       matchFilter.status = 'published';
     } else if (status) {
@@ -51,7 +48,6 @@ router.get('/', protect, async (req, res) => {
       matchFilter.instructor = new mongoose.Types.ObjectId(instructor);
     }
 
-    // Text search over title and description
     if (search && search.trim()) {
       const searchRegex = new RegExp(search.trim(), 'i');
       matchFilter.$or = [{ title: searchRegex }, { description: searchRegex }];
@@ -135,8 +131,6 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
-// @route   GET /api/courses/:id
-// @desc    Get single course by id
 router.get('/:id', protect, async (req, res) => {
   try {
     const course = await Course.findById(req.params.id).populate('instructor', 'name email');

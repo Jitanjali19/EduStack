@@ -1,45 +1,45 @@
-# Decisions
+# Technical Decisions & Architectural Choices
 
-These are the main technical choices we made while building this project.
+This document records key technical decisions made during development, what was chosen, what was rejected, why, and a decision that was later reversed.
 
-## Decision 1: Frontend
+---
 
-- **Chose:** React + Vite for the frontend.
-- **Rejected:** A heavy multi-page setup or plain HTML without state management.
-- **Why:** Vite is fast to start and build, and React components make building dynamic dashboards and progress bars simple.
+## Decision 1: Frontend Framework
+- **Chose**: React + Vite.
+- **Rejected**: Multi-page server rendering (EJS/Pug) or raw vanilla JS without state management.
+- **Why**: Vite provides fast HMR during development, and React components simplify state management for dynamic dashboard charts and enrollment rosters.
 
-## Decision 2: Backend
+## Decision 2: Centralized Server-Side Enforcement
+- **Chose**: Express backend middleware as the single authority for business rules.
+- **Rejected**: Relying on frontend UI guards or client-side validation.
+- **Why**: Server enforcement ensures role security, publishing checks, and progress state machine integrity cannot be bypassed via direct API calls (curl/Postman).
 
-- **Chose:** Node.js with Express.
-- **Rejected:** Serverless functions or embedding business logic into the frontend.
-- **Why:** The backend is the central place to strictly enforce rules (role access, course publishing constraints, forward-only progress states).
+## Decision 3: Database & Document Modeling
+- **Chose**: MongoDB with Mongoose ORM.
+- **Rejected**: Relational SQL (PostgreSQL) or in-memory arrays.
+- **Why**: Flexible document structures fit hierarchical course-lesson trees, activity log audit records, and dynamic learner progress tracking.
 
-## Decision 3: Database
+## Decision 4: Authentication & Route Protection
+- **Chose**: Explicit early-return checks in `authMiddleware` returning 401/403 status immediately.
+- **Rejected**: Letting `jwt.verify()` throw unhandled exceptions to global error middleware.
+- **Why**: Explicit checks make failure reasons clear and prevent unnecessary route execution.
 
-- **Chose:** MongoDB with Mongoose.
-- **Rejected:** SQL setup or in-memory array storage.
-- **Why:** Flexible document schemas work well for course trees, lesson lists, activity logs, and many-to-many enrollments.
+## Decision 5: Course Search, Filtering & Pagination (Goal 6)
+- **Chose**: 100% server-side search, filtering, sorting, and pagination via MongoDB `$facet` aggregation.
+- **Rejected**: Loading all courses into the browser and filtering client-side.
+- **Why**: Client-side filtering fails at scale when thousands of courses exist and breaks total match count requirements.
 
-## Decision 4: Auth & Route Protection
+## Decision 6: Progress State Machine & Completion Rules (Goal 4 & 9)
+- **Chose**: Server-enforced forward-only progress (`not_started` -> `in_progress` -> `completed`) validated against lesson completion.
+- **Rejected**: Unrestricted progress updates or client-side self-reporting.
+- **Why**: Prevents learners from skipping mandatory material or setting invalid progress states.
 
-- **Chose:** Explicit early-return checks in `authMiddleware` (returning clean 401/403 status immediately if token is missing or invalid).
-- **Rejected:** Allowing `jwt.verify()` to throw unhandled errors into a generic global error handler.
-- **Why:** Explicit checks make it clear why a request failed and prevent unnecessary execution.
+## Decision 7: Activity History Immutability (Goal 9)
+- **Chose**: Mongoose pre-hooks on `ActivityLog` blocking `updateOne`, `updateMany`, `deleteOne`, and `deleteMany`.
+- **Rejected**: Soft-deletes or mutable log records.
+- **Why**: Guaranteeing permanent, non-rewritable audit history as required by Goal 9.
 
-## Decision 5: Course Finding & Search Logic (Goal 6)
-
-- **Chose:** Server-side search, category/status filtering, dynamic sorting (by title, date, or enrollment count), and pagination via MongoDB aggregation.
-- **Rejected:** Fetching all courses to the browser and filtering client-side.
-- **Why:** Client-side filtering breaks at scale when thousands of courses exist. Server-side queries return only the requested page of data with exact total match counts.
-
-## Decision 6: Progress Tracking & Course Completion Rules (Goal 4)
-
-- **Chose:** Server-enforced forward-only state machine (`not_started` -> `in_progress` -> `completed`) driven by lesson completions.
-- **Rejected:** Letting learners manually mark a course complete without finishing all its lessons.
-- **Why:** Prevents skipping required material. Course completion is strictly verified on the backend by checking that all course lessons are completed.
-
-## Decision 7: Activity Log Immutability (Goal 9)
-
-- **Chose:** Mongoose middleware hooks on `ActivityLog` that block `updateOne`, `updateMany`, and `delete` operations.
-- **Rejected:** Editable activity logs or soft-delete flags.
-- **Why:** Audit history must be permanent and unchangeable by instructors and learners alike.
+## Decision 8: Inactivity Alert Tracking (REVERSED)
+- **Chose (Reversed)**: Initially designed a separate `Alert` collection to track active vs. dismissed alerts.
+- **Reversed To**: Embedded `dismissedAt` timestamp directly inside the `Enrollment` model.
+- **Why**: A separate collection required complex multi-collection joins (`$lookup`) between `User`, `Course`, `Enrollment`, and `Alert` just to compute inactivity alert counts. Embedding `dismissedAt` directly on `Enrollment` allowed single-pass querying of inactive learners (`lastActivityAt <= 14 days ago`) while seamlessly supporting alert reappearance (`lastActivityAt > dismissedAt`).
