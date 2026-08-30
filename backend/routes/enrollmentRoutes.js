@@ -434,4 +434,66 @@ router.post('/bulk-enroll/:courseId', protect, authorize('instructor'), async (r
   }
 });
 
+router.get('/course/:courseId/export-csv', protect, async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    if (req.user.role === 'instructor' && course.instructor.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const totalLessons = await Lesson.countDocuments({ courseId });
+    const enrollments = await Enrollment.find({ courseId })
+      .populate('userId', 'name email')
+      .sort({ enrolledAt: -1 });
+
+    const escapeCsv = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
+
+    const headers = [
+      'Learner Name',
+      'Learner Email',
+      'Enrollment Status',
+      'Enrolled At',
+      'Completed Lessons Count',
+      'Total Lessons Count',
+      'Progress Percent',
+      'Last Activity At',
+      'Completed At',
+    ];
+
+    const rows = enrollments.map((e) => {
+      const completedCount = e.completedLessons ? e.completedLessons.length : 0;
+      const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+
+      return [
+        escapeCsv(e.userId ? e.userId.name : 'Unknown'),
+        escapeCsv(e.userId ? e.userId.email : 'Unknown'),
+        escapeCsv(e.status),
+        escapeCsv(e.enrolledAt ? new Date(e.enrolledAt).toISOString() : ''),
+        completedCount,
+        totalLessons,
+        `${progressPercent}%`,
+        escapeCsv(e.lastActivityAt ? new Date(e.lastActivityAt).toISOString() : ''),
+        escapeCsv(e.completedAt ? new Date(e.completedAt).toISOString() : ''),
+      ].join(',');
+    });
+
+    const csvContent = [headers.map(escapeCsv).join(','), ...rows].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="course_${courseId}_progress.csv"`
+    );
+    res.status(200).send(csvContent);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to export CSV report' });
+  }
+});
+
 module.exports = router;

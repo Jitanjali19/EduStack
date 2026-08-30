@@ -35,6 +35,10 @@ const enrollmentSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    dismissedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

@@ -49,8 +49,8 @@ This document outlines the step-by-step development process of the course platfo
 
 - [x] **4.1 Dashboard Metrics (Goal 8)**: Total learners, published courses, completions this month, in-progress count, 8-week completion trend
 - [x] **4.2 Bulk Enrollment (Goal 7)**: Paste/upload email addresses with per-address result report (`unknown`, `already_enrolled`, `enrolled`)
-- [ ] **4.3 CSV Export (Goal 7)**: Export progress of all enrolled learners in a course as a downloadable CSV
-- [ ] **4.4 Inactive Learner Alerts (Goal 10)**: Detect learners in `in_progress` with no activity for >14 days; badge count and dismiss/reappear flow
+- [x] **4.3 CSV Export (Goal 7)**: Export progress of all enrolled learners in a course as a downloadable CSV
+- [x] **4.4 Inactive Learner Alerts (Goal 10)**: Detect learners in `in_progress` with no activity for >14 days; badge count and dismiss/reappear flow
 
 ---
 
