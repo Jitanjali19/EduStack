@@ -5,7 +5,7 @@ const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
 const ActivityLog = require('../models/ActivityLog');
 const User = require('../models/User');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -348,6 +348,89 @@ router.patch('/course/:courseId/status', protect, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to update progress status' });
+  }
+});
+
+router.post('/bulk-enroll/:courseId', protect, authorize('instructor'), async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const { emails } = req.body;
+
+    if (!emails || (!Array.isArray(emails) && typeof emails !== 'string')) {
+      return res.status(400).json({ message: 'List of emails is required' });
+    }
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    if (course.instructor.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'You can only manage enrollment for your own courses' });
+    }
+
+    if (course.status !== 'published') {
+      return res.status(400).json({ message: 'Cannot bulk-enroll into an unpublished course' });
+    }
+
+    const emailList = (Array.isArray(emails) ? emails : emails.split(/[\n,;\s]+/))
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e.length > 0);
+
+    const results = [];
+    let enrolledCount = 0;
+    let alreadyEnrolledCount = 0;
+    let unknownCount = 0;
+
+    for (const email of emailList) {
+      const user = await User.findOne({ email });
+
+      if (!user) {
+        unknownCount++;
+        results.push({ email, status: 'unknown' });
+        continue;
+      }
+
+      const existingEnrollment = await Enrollment.findOne({ userId: user._id, courseId });
+
+      if (existingEnrollment) {
+        alreadyEnrolledCount++;
+        results.push({ email, status: 'already_enrolled', userId: user._id });
+        continue;
+      }
+
+      const newEnrollment = await Enrollment.create({
+        userId: user._id,
+        courseId,
+        status: 'not_started',
+        completedLessons: [],
+        enrolledAt: new Date(),
+        lastActivityAt: new Date(),
+      });
+
+      await ActivityLog.create({
+        courseId,
+        actorId: req.user._id,
+        action: 'enrolled',
+        details: `Bulk enrolled learner ${user.email}`,
+      }).catch((err) => console.error(err.message));
+
+      enrolledCount++;
+      results.push({ email, status: 'enrolled', userId: user._id, enrollmentId: newEnrollment._id });
+    }
+
+    res.status(200).json({
+      message: 'Bulk enrollment process completed',
+      summary: {
+        total: emailList.length,
+        enrolled: enrolledCount,
+        already_enrolled: alreadyEnrolledCount,
+        unknown: unknownCount,
+      },
+      results,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to process bulk enrollment' });
   }
 });
 
