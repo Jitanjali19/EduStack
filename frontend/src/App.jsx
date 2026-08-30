@@ -3,6 +3,10 @@ import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import CourseCatalogPage from './pages/CourseCatalogPage';
+import CourseDetailPage from './pages/CourseDetailPage';
+import CourseStudioPage from './pages/CourseStudioPage';
+import LessonManagerPage from './pages/LessonManagerPage';
 
 const ProtectedRoute = ({ children, role }) => {
   const { isAuthenticated, user } = useAuth();
@@ -46,10 +50,12 @@ const App = () => {
 
         <Route path="/" element={<RootRedirect />} />
 
-        <Route path="/courses" element={<ProtectedRoute><Placeholder title="Course Catalog" /></ProtectedRoute>} />
+        <Route path="/courses" element={<ProtectedRoute><CourseCatalogPage /></ProtectedRoute>} />
+        <Route path="/courses/:id" element={<ProtectedRoute><CourseDetailPage /></ProtectedRoute>} />
         <Route path="/my-courses" element={<ProtectedRoute role="learner"><Placeholder title="My Courses" /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute role="instructor"><Placeholder title="Dashboard" /></ProtectedRoute>} />
-        <Route path="/instructor/courses" element={<ProtectedRoute role="instructor"><Placeholder title="Course Studio" /></ProtectedRoute>} />
+        <Route path="/instructor/courses" element={<ProtectedRoute role="instructor"><CourseStudioPage /></ProtectedRoute>} />
+        <Route path="/instructor/courses/:id" element={<ProtectedRoute role="instructor"><LessonManagerPage /></ProtectedRoute>} />
         <Route path="/alerts" element={<ProtectedRoute role="instructor"><Placeholder title="Alerts" /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/login" replace />} />
