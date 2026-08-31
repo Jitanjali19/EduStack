@@ -165,7 +165,8 @@ Requirements:
 - Demo credentials for every role recorded in `SUBMISSION.md`.
 - Connection strings, keys and passwords kept in environment variables, never in the repository.
 - Free tiers often sleep when idle and can take a minute or more to wake. Note it in `SUBMISSION.md` if yours does, so a slow first load is not read as a broken deployment.
-- If you cannot get it hosted, submit anyway and record in `SUBMISSION.md` what you tried and where it broke.
+- If you cannot get it hosted, 
+submit anyway and record in `SUBMISSION.md` what you tried and where it broke.
 
 ## How to submit
 

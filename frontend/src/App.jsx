@@ -7,6 +7,10 @@ import CourseCatalogPage from './pages/CourseCatalogPage';
 import CourseDetailPage from './pages/CourseDetailPage';
 import CourseStudioPage from './pages/CourseStudioPage';
 import LessonManagerPage from './pages/LessonManagerPage';
+import MyCoursesPage from './pages/MyCoursesPage';
+import LessonViewerPage from './pages/LessonViewerPage';
+import InstructorDashboardPage from './pages/InstructorDashboardPage';
+import AlertsPage from './pages/AlertsPage';
 
 const ProtectedRoute = ({ children, role }) => {
   const { isAuthenticated, user } = useAuth();
@@ -52,11 +56,12 @@ const App = () => {
 
         <Route path="/courses" element={<ProtectedRoute><CourseCatalogPage /></ProtectedRoute>} />
         <Route path="/courses/:id" element={<ProtectedRoute><CourseDetailPage /></ProtectedRoute>} />
-        <Route path="/my-courses" element={<ProtectedRoute role="learner"><Placeholder title="My Courses" /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute role="instructor"><Placeholder title="Dashboard" /></ProtectedRoute>} />
+        <Route path="/courses/:courseId/lessons/:lessonId" element={<ProtectedRoute role="learner"><LessonViewerPage /></ProtectedRoute>} />
+        <Route path="/my-courses" element={<ProtectedRoute role="learner"><MyCoursesPage /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute role="instructor"><InstructorDashboardPage /></ProtectedRoute>} />
         <Route path="/instructor/courses" element={<ProtectedRoute role="instructor"><CourseStudioPage /></ProtectedRoute>} />
         <Route path="/instructor/courses/:id" element={<ProtectedRoute role="instructor"><LessonManagerPage /></ProtectedRoute>} />
-        <Route path="/alerts" element={<ProtectedRoute role="instructor"><Placeholder title="Alerts" /></ProtectedRoute>} />
+        <Route path="/alerts" element={<ProtectedRoute role="instructor"><AlertsPage /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

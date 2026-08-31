@@ -355,7 +355,7 @@ router.post('/bulk-enroll/:courseId', protect, authorize('instructor'), async (r
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    if (course.instructor.toString() !== req.user._id.toString()) {
+    if (req.user.role !== 'admin' && course.instructor.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'You can only manage enrollment for your own courses' });
     }
 
@@ -363,9 +363,41 @@ router.post('/bulk-enroll/:courseId', protect, authorize('instructor'), async (r
       return res.status(400).json({ message: 'Cannot bulk-enroll into an unpublished course' });
     }
 
-    const emailList = (Array.isArray(emails) ? emails : emails.split(/[\n,;\s]+/))
-      .map((e) => e.trim().toLowerCase())
-      .filter((e) => e.length > 0);
+    // Extract email addresses cleanly from string, CSV, or array format
+    let rawList = [];
+    if (Array.isArray(emails)) {
+      rawList = emails;
+    } else {
+      // Split by newlines or delimiters
+      rawList = emails.split(/[\r\n,;\t]+/);
+    }
+
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+    const emailList = [];
+
+    for (let item of rawList) {
+      if (typeof item !== 'string') continue;
+      const trimmed = item.trim().replace(/^["']|["']$/g, '');
+      if (!trimmed) continue;
+      
+      // Skip obvious CSV headers
+      if (/^(email|emails|learner_email|user_email|learner\s*email)$/i.test(trimmed)) {
+        continue;
+      }
+
+      // If item contains an email pattern inside (e.g. "Name <email@domain.com>"), extract it
+      const match = trimmed.match(emailRegex);
+      if (match) {
+        emailList.push(match[0].toLowerCase());
+      } else {
+        // Keep raw trimmed string so invalid/unknown addresses are accurately reported as unknown
+        emailList.push(trimmed.toLowerCase());
+      }
+    }
+
+    if (emailList.length === 0) {
+      return res.status(400).json({ message: 'No valid email addresses found in the provided input' });
+    }
 
     const results = [];
     let enrolledCount = 0;
@@ -420,6 +452,7 @@ router.post('/bulk-enroll/:courseId', protect, authorize('instructor'), async (r
       results,
     });
   } catch (error) {
+    console.error('Bulk enroll error:', error);
     res.status(500).json({ message: 'Failed to process bulk enrollment' });
   }
 });
