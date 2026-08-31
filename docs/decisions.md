@@ -43,3 +43,9 @@ This document records key technical decisions made during development, what was 
 - **Chose (Reversed)**: Initially designed a separate `Alert` collection to track active vs. dismissed alerts.
 - **Reversed To**: Embedded `dismissedAt` timestamp directly inside the `Enrollment` model.
 - **Why**: A separate collection required complex multi-collection joins (`$lookup`) between `User`, `Course`, `Enrollment`, and `Alert` just to compute inactivity alert counts. Embedding `dismissedAt` directly on `Enrollment` allowed single-pass querying of inactive learners (`lastActivityAt <= 14 days ago`) while seamlessly supporting alert reappearance (`lastActivityAt > dismissedAt`).
+
+## Decision 9: Bulk Enrollment Modal Lifecycle & In-Modal Result Review (Goal 7)
+- **Chose**: In-modal results view with decoupled parent dashboard metric refresh (only triggering dashboard re-fetch on modal dismissal/Done).
+- **Rejected**: Immediately triggering full-page metric refetch (`fetchMetrics`) upon API response inside `handleSubmit`.
+- **Why**: Goal 7 requires explicitly displaying the outcome per address (`enrolled`, `already_enrolled`, `unknown`). When `fetchMetrics` ran synchronously on API return, the dashboard showed a loading spinner and unmounted the modal before the instructor could inspect the per-learner audit list. Decoupling the review state allows instructors to examine the color-coded results, filter by status, and download the learner progress CSV before closing the modal.
+

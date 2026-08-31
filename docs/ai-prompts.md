@@ -92,6 +92,27 @@ immediately, before calling jwt.verify(). This way an unauthenticated
 request gets a proper 401/403 response instead of a server crash or
 an unclear error.
 
+## 7. Bulk Enrollment & Learner Progress CSV Export (Goal 7)
+
+### Prompt
+
+"Implement bulk enrollment for instructors to paste or upload email lists, classify per-address status (enrolled, already_enrolled, unknown), and export learner progress as CSV."
+
+### What I got
+The initial code had several serious issues during testing:
+1. **Missing File Upload**: Only had a basic `<textarea>` without any CSV or TXT file upload or drag-and-drop support.
+2. **Modal Reset / Vanishing Results**: On clicking "Start Bulk Enrollment", the code immediately called the parent's `onComplete()` callback inside `handleSubmit()`. This triggered `fetchMetrics()` with `setLoading(true)`, which unmounted the dashboard and destroyed the modal before the instructor could ever see the results screen.
+3. **White Screen Crash**: Encountered an `Uncaught ReferenceError: detectedEmails is not defined` inside `BulkEnrollModal.jsx` due to an unreferenced variable in the render method, which crashed React with a blank white screen.
+4. **Database & Metric Sync Confusion**: When pasting unregistered placeholder emails, they correctly classified as `unknown`, but because no new user was enrolled, the dashboard counters didn't increase until real registered accounts were provided.
+
+### What I corrected & Action Taken
+1. **Dual-Mode Input**: Added both a Paste mode (supporting commas, newlines, semicolons, tabs, and spaces) with live email detection count, and a File Upload dropzone supporting `.csv` and `.txt` files with header skipping and preview.
+2. **Fixed State Lifecycle**: Removed the premature `onComplete()` from `handleSubmit()`. Created a dedicated `handleClose()` that only syncs parent metrics when the user clicks "Done" or closes the modal, keeping the Results Screen open.
+3. **Fixed Dashboard Non-Blocking Refresh**: Updated `fetchMetrics(showLoading = false)` in `InstructorDashboardPage` so background updates don't show a full-screen loading spinner that unmounts active dialogs.
+4. **Fixed Render Variable Bug**: Correctly scoped and declared `detectedEmails` in `BulkEnrollModal.jsx`.
+5. **Per-Address Badges & CSV Export**: Added color-coded status badges (`NEWLY ENROLLED`, `ALREADY ENROLLED`, `UNKNOWN ADDRESS`), filter tabs, search filter, and an inline **"Export Course Learner Progress as CSV"** download button.
+
 ## Final note
 
 This is the real prompt history we used. It shows the project started from the assignment, moved into system design, and then into implementation step by step.
+

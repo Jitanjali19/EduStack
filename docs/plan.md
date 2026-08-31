@@ -40,8 +40,12 @@ This document outlines the step-by-step development process, session breakdown, 
 
 ### Phase 4: Reporting, Bulk Actions & Alerts (Completed)
 - [x] **4.1 Dashboard Metrics (Goal 8)**: Total learners, published courses, completions this month, in-progress count, 8-week completion trend
-- [x] **4.2 Bulk Enrollment (Goal 7)**: Paste/upload email addresses with per-address result report (`unknown`, `already_enrolled`, `enrolled`)
-- [x] **4.3 CSV Export (Goal 7)**: Export progress of all enrolled learners in a course as a downloadable CSV
+- [x] **4.2 Bulk Enrollment (Goal 7)**:
+  - Dual-mode input: Paste (multi-delimiter regex) & File Upload (.csv and .txt drag-and-drop)
+  - Strict per-address outcome classification (`enrolled`, `already_enrolled`, `unknown`)
+  - Color-coded audit badges, interactive status filter tabs, and email search
+  - Modal lifecycle preservation (avoiding destructive parent unmount during review)
+- [x] **4.3 CSV Export (Goal 7)**: Export progress of all enrolled learners in a course as a downloadable CSV with proper HTTP headers and escaping
 - [x] **4.4 Inactive Learner Alerts (Goal 10)**: Detect learners in `in_progress` with no activity for >14 days; badge count and dismiss/reappear flow
 
 ### Phase 5: Final Polish & Verification (Completed)
@@ -59,7 +63,7 @@ Development was split into 5 distinct sessions across the week:
 - **Session 2 (2.5 hrs)**: Course & Lesson CRUD + Publishing Rules (Phase 2 Core)
 - **Session 3 (2.5 hrs)**: Enrollment, Progress State Machine & Immutable Activity Logs (Phase 3)
 - **Session 4 (2 hrs)**: Server-side Search, Filtering, Sorting & Pagination (Phase 3.4 & Phase 4 Metrics)
-- **Session 5 (1 hr)**: Bulk Enrollment, CSV Exports, Inactivity Alerts & Documentation Polish (Phase 4 & 5)
+- **Session 5 (1.5 hrs)**: Bulk Enrollment, CSV Exports, Inactivity Alerts, Modal Lifecycle Bugfix & Documentation Polish (Phase 4 & 5)
 
 ### 2. What order was built in and why
 We built in backend-first, data-model order:
@@ -67,15 +71,17 @@ We built in backend-first, data-model order:
 2. **Course & Lesson CRUD**: Courses and lessons form the core domain data required for enrollments.
 3. **Enrollment & Progress State Machine**: Progress logic depends directly on course/lesson models.
 4. **Search, Reporting & Alerts**: Aggregations and alerts depend on populated enrollment and user activity data.
+5. **Bulk Operations & Export**: Built on top of single enrollment primitives, with dedicated UI review states and CSV streaming.
 Building in this order avoided refactoring data structures mid-way.
 
 ### 3. Estimated vs Actual Time
 - **Estimated Total**: 12 hours
-- **Actual Total**: 10 hours
+- **Actual Total**: 10.5 hours
   - *Phase 1 & 2*: Estimated 4 hrs, Actual 4.5 hrs (extra time spent on publishing constraint validation).
   - *Phase 3*: Estimated 3 hrs, Actual 2.5 hrs (mongoose schema hooks simplified activity logging).
-  - *Phase 4*: Estimated 3 hrs, Actual 2 hrs (reused enrollment helper functions for bulk processing).
+  - *Phase 4*: Estimated 3 hrs, Actual 2.5 hrs (extra time spent resolving React modal unmounting lifecycle and bulk CSV file parsing).
   - *Phase 5*: Estimated 2 hrs, Actual 1 hr (focused verification and documentation sync).
 
 ### 4. What was cut when running short
 We deliberately cut stretch features (quizzes, completion certificates, video watch tracking) to ensure that 100% of the 10 core requirements were met with strict, production-ready server validation and zero commented-out code.
+
