@@ -7,6 +7,7 @@ const CATEGORIES = [
   'Web Development', 'Compliance', 'Design',
   'Data Science', 'Marketing', 'Leadership',
 ];
+const CUSTOM_CATEGORY = 'Other';
 
 const STATUS_STYLES = {
   published: 'bg-green-500/15 text-green-400 border-green-500/30',
@@ -17,22 +18,31 @@ const STATUS_STYLES = {
 // ─── Course Form Modal ────────────────────────────────────────────────────────
 const CourseModal = ({ course, onClose, onSaved }) => {
   const isEdit = !!course;
+  const initialCategory = course?.category || CATEGORIES[0];
+  const isCustomCategory = !CATEGORIES.includes(initialCategory);
   const [form, setForm] = useState({
     title:       course?.title       || '',
     description: course?.description || '',
-    category:    course?.category    || CATEGORIES[0],
+    category:    isCustomCategory ? CUSTOM_CATEGORY : initialCategory,
   });
+  const [customCategory, setCustomCategory] = useState(isCustomCategory ? initialCategory : '');
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    const category = form.category === CUSTOM_CATEGORY ? customCategory.trim() : form.category;
+    if (!category) {
+      setError('Please enter a category.');
+      return;
+    }
     setSaving(true);
     try {
+      const courseData = { ...form, category };
       const { data } = isEdit
-        ? await apiClient.put(`/courses/${course._id}`, form)
-        : await apiClient.post('/courses', form);
+        ? await apiClient.put(`/courses/${course._id}`, courseData)
+        : await apiClient.post('/courses', courseData);
       onSaved(data.course);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to save course.');
@@ -84,7 +94,17 @@ const CourseModal = ({ course, onClose, onSaved }) => {
               className="w-full bg-slate-800 border border-slate-600 text-slate-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-sky-500 cursor-pointer"
             >
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              <option value={CUSTOM_CATEGORY}>{CUSTOM_CATEGORY}</option>
             </select>
+            {form.category === CUSTOM_CATEGORY && (
+              <input
+                required
+                value={customCategory}
+                onChange={(e) => setCustomCategory(e.target.value)}
+                placeholder="Write your category"
+                className="w-full mt-3 bg-slate-800 border border-slate-600 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
+              />
+            )}
           </div>
           <div className="flex gap-3 pt-1">
             <button
