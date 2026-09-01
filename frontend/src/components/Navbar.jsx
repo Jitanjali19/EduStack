@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../api/apiClient';
+import EduStackLogo from './EduStackLogo';
 
 const Navbar = () => {
   const { user, isAuthenticated, isInstructor, logout } = useAuth();
@@ -23,8 +24,8 @@ const Navbar = () => {
   return (
     <nav className="bg-slate-900 border-b border-slate-700 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <Link to="/" className="text-sky-400 font-bold text-xl tracking-tight">
-          CoursePlatform
+        <Link to="/" aria-label="EduStack home">
+          <EduStackLogo />
         </Link>
 
         {isAuthenticated ? (

@@ -32,7 +32,7 @@ app.use('/api/alerts', alertRoutes);
 
 app.get('/', (req, res) => {
   res.json({
-    message: 'Course Platform API is running',
+    message: 'EduStack API is running',
     status: 'ok',
   });
 });
