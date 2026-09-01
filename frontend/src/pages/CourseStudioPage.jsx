@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import ActivityLogModal from '../components/ActivityLogModal';
 
@@ -211,7 +211,8 @@ const CourseRow = ({ course, onEdit, onStatusAction, onViewLog }) => {
 };
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-const CourseStudioPage = () => {
+const CourseStudioPage = ({ ownOnly = false }) => {
+  const navigate = useNavigate();
   const [courses, setCourses]         = useState([]);
   const [loading, setLoading]         = useState(true);
   const [modalCourse, setModalCourse] = useState(undefined); // undefined=closed, null=new, obj=edit
@@ -221,7 +222,7 @@ const CourseStudioPage = () => {
     setLoading(true);
     try {
       const { data } = await apiClient.get('/courses', {
-        params: { limit: 100, sortBy: 'createdAt', order: 'desc' },
+        params: { limit: 100, sortBy: 'createdAt', order: 'desc', ...(ownOnly ? { mine: 'true' } : {}) },
       });
       setCourses(data.courses || []);
     } catch {
@@ -229,11 +230,15 @@ const CourseStudioPage = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [ownOnly]);
 
   useEffect(() => { fetchMyCourses(); }, [fetchMyCourses]);
 
   const handleSaved = (savedCourse) => {
+    if (!modalCourse) {
+      navigate(`/instructor/courses/${savedCourse._id}`);
+      return;
+    }
     setCourses(prev => {
       const exists = prev.find(c => c._id === savedCourse._id);
       return exists
@@ -259,8 +264,8 @@ const CourseStudioPage = () => {
 
         <div className="flex items-start justify-between mb-8 gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-bold text-white">Course Studio</h1>
-            <p className="text-slate-400 text-sm mt-1">Manage your courses and their lifecycle.</p>
+            <h1 className="text-3xl font-bold text-white">{ownOnly ? 'My Courses' : 'Course Studio'}</h1>
+            <p className="text-slate-400 text-sm mt-1">{ownOnly ? 'Manage the courses you created.' : 'Manage your courses and their lifecycle.'}</p>
           </div>
           <button
             onClick={() => setModalCourse(null)}

@@ -81,7 +81,7 @@ const CourseCatalogPage = () => {
   const fetchCourses = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { page, limit: 9, sortBy, order };
+      const params = { page, limit: 10, sortBy, order };
       if (debouncedSearch) params.search = debouncedSearch;
       if (category !== 'All') params.category = category;
       if (isInstructor && status !== 'all') params.status = status;

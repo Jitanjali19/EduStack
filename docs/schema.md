@@ -111,6 +111,8 @@ This document describes the schema design, field types, relationships, constrain
 
 ## 5. What Would Break First at 100x Data?
 
-1. **Course Search Regex Matching**: `RegExp` regex search over course titles and descriptions will become slow without a MongoDB Text Index (`$text` index).
+1. **Course Search Indexing**: Search is already performed on the server, so the browser does not receive all courses. At much larger scale, regex matching over course titles and descriptions could still become slow. A MongoDB text index or a dedicated search service would be the next improvement.
 2. **Inactivity Alert Scanning**: Scanning all `in_progress` enrollments with JavaScript filtering for 14-day inactivity across millions of rows will degrade. Adding a compound index `{ courseId: 1, status: 1, lastActivityAt: 1 }` will be necessary.
 3. **Weekly Completion Trend Bucketing**: Calculating 8-week completion trends in JS memory will reach memory limits. Transitioning to a native MongoDB Aggregation Pipeline `$bucket` operation will resolve this.
+
+The course list is designed for this growth from the beginning. MongoDB does the matching, sorting, and pagination, and the API sends only the requested page. This reduces browser memory use, response size, and unnecessary network traffic. The next scale improvement would be indexes for common filters and a text-search index for faster title and description search.

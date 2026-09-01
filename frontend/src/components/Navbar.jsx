@@ -42,6 +42,9 @@ const Navbar = () => {
                   <Link to="/instructor/courses" className="text-slate-400 hover:text-white text-sm font-medium transition-colors">
                     Course Studio
                   </Link>
+                  <Link to="/instructor/my-courses" className="text-slate-400 hover:text-white text-sm font-medium transition-colors">
+                    My Courses
+                  </Link>
                   <Link to="/alerts" className="flex items-center gap-1.5 text-slate-400 hover:text-white text-sm font-medium transition-colors">
                     Alerts
                     {alertCount > 0 && (
@@ -59,7 +62,9 @@ const Navbar = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="text-slate-300 text-sm font-semibold hidden sm:block">{user?.name}</span>
+              <Link to="/profile" className="text-slate-300 text-sm font-semibold hidden sm:block hover:text-sky-300 transition-colors" title="Open your profile">
+                {user?.name}
+              </Link>
               <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded tracking-wider ${
                 isInstructor
                   ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'

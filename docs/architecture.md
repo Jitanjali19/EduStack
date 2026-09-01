@@ -13,6 +13,7 @@ This project is a course platform for internal training. The main idea is simple
    - Runs as a server process.
    - Handles authentication, authorization, course CRUD, enrollment logic, search/filtering, progress updates, alerts, and reporting.
    - Validates business rules before saving changes.
+   - Applies course search, filters, sorting, and pagination before sending data to the browser.
 
 3. Database: MongoDB
    - Stores users, courses, lessons, enrollments, progress records, activity logs, and alerts.
@@ -32,6 +33,8 @@ This project is a course platform for internal training. The main idea is simple
 - Express uses Mongoose to read/write MongoDB data.
 - The backend checks the user role before allowing operations.
 - The frontend receives JSON responses and renders screens based on the result.
+
+For the Courses page, the browser sends the search text, filters, sort order, page number, and page size. MongoDB applies these options and the API returns only that page of courses. This is important for a company-size course library because the browser never needs to download the complete dataset just to show the first page.
 
 ## Where each piece runs
 

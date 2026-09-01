@@ -11,6 +11,7 @@ import MyCoursesPage from './pages/MyCoursesPage';
 import LessonViewerPage from './pages/LessonViewerPage';
 import InstructorDashboardPage from './pages/InstructorDashboardPage';
 import AlertsPage from './pages/AlertsPage';
+import ProfilePage from './pages/ProfilePage';
 
 const ProtectedRoute = ({ children, role }) => {
   const { isAuthenticated, user } = useAuth();
@@ -60,8 +61,10 @@ const App = () => {
         <Route path="/my-courses" element={<ProtectedRoute role="learner"><MyCoursesPage /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute role="instructor"><InstructorDashboardPage /></ProtectedRoute>} />
         <Route path="/instructor/courses" element={<ProtectedRoute role="instructor"><CourseStudioPage /></ProtectedRoute>} />
+        <Route path="/instructor/my-courses" element={<ProtectedRoute role="instructor"><CourseStudioPage ownOnly /></ProtectedRoute>} />
         <Route path="/instructor/courses/:id" element={<ProtectedRoute role="instructor"><LessonManagerPage /></ProtectedRoute>} />
         <Route path="/alerts" element={<ProtectedRoute role="instructor"><AlertsPage /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

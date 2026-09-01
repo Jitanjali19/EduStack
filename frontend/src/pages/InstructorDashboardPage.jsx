@@ -74,8 +74,8 @@ const InstructorDashboardPage = () => {
 
   const { headline, breakdownByCourse = [], eightWeekCompletionTrend = [] } = metrics || {};
 
-  // Maximum value for weekly chart normalization
-  const maxWeeklyCount = Math.max(...eightWeekCompletionTrend.map((w) => w.completionsCount), 1);
+  // Keep small completion counts visually distinct instead of making the current maximum full height.
+  const maxWeeklyCount = Math.max(...eightWeekCompletionTrend.map((w) => w.completionsCount), 10);
 
   return (
     <div className="min-h-screen bg-slate-950 py-8 px-4">
@@ -138,24 +138,27 @@ const InstructorDashboardPage = () => {
           {/* Bar Graph Visual */}
           <div className="h-48 flex items-end justify-between gap-2 sm:gap-4 pt-6 pb-2 px-2 border-b border-slate-800">
             {eightWeekCompletionTrend.map((week) => {
-              const heightPercent = Math.max((week.completionsCount / maxWeeklyCount) * 100, 6);
+              const hasCompletions = week.completionsCount > 0;
+              const heightPercent = hasCompletions
+                ? (week.completionsCount / maxWeeklyCount) * 100
+                : 2;
               return (
                 <div key={week.weekLabel} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
                   {/* Tooltip Count */}
-                  <span className="text-[11px] font-mono text-slate-400 group-hover:text-emerald-400 font-bold transition-colors">
+                  <span className={`text-[11px] font-mono font-bold transition-colors ${hasCompletions ? 'text-emerald-300 group-hover:text-emerald-200' : 'text-slate-600'}`}>
                     {week.completionsCount}
                   </span>
 
                   {/* Bar */}
                   <div
-                    className="w-full max-w-12 bg-slate-800 group-hover:bg-emerald-500 rounded-t-lg transition-all duration-300 relative overflow-hidden"
+                    className={`w-full max-w-12 rounded-t-lg transition-all duration-300 relative overflow-hidden ${hasCompletions ? 'bg-gradient-to-t from-emerald-600 to-sky-400 shadow-lg shadow-emerald-500/20 group-hover:from-emerald-500 group-hover:to-sky-300' : 'bg-slate-800/70'}`}
                     style={{ height: `${heightPercent}%` }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                   </div>
 
                   {/* Label */}
-                  <span className="text-[10px] sm:text-xs text-slate-500 group-hover:text-slate-300 truncate">
+                  <span className={`text-[10px] sm:text-xs truncate ${hasCompletions ? 'text-slate-300' : 'text-slate-600'}`}>
                     {week.weekLabel}
                   </span>
                 </div>

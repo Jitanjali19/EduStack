@@ -26,6 +26,7 @@ router.get('/', protect, async (req, res) => {
       order = 'desc',
       page = 1,
       limit = 10,
+      mine,
     } = req.query;
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
@@ -38,6 +39,10 @@ router.get('/', protect, async (req, res) => {
       matchFilter.status = 'published';
     } else if (status) {
       matchFilter.status = status;
+    }
+
+    if (mine === 'true' && req.user.role === 'instructor') {
+      matchFilter.instructor = req.user._id;
     }
 
     if (category) {
