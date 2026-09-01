@@ -116,3 +116,25 @@ The initial code had several serious issues during testing:
 
 This is the real prompt history we used. It shows the project started from the assignment, moved into system design, and then into implementation step by step.
 
+## 8. Fix CSV export permission problem
+
+### Problem
+
+When I clicked the CSV button on the instructor dashboard, the file did not download. The browser console showed a `403 Forbidden` error.
+
+The reason was that the dashboard was showing courses from the whole platform, but the CSV backend route was checking that the logged-in instructor owned the course. So an instructor could see a course in the table, but the backend rejected the export if that course belonged to another instructor.
+
+### What I corrected
+
+First, I made sure the dashboard loads all courses, because the instructor needs to see the complete course progress table. Then I checked the permission rule in the CSV route. The correct rule is:
+
+- An instructor can export their own course, whether it is a draft or published.
+- An instructor can export another instructor's course only when that course is published.
+- A draft course owned by another instructor must stay protected.
+
+The CSV request already sends the login token through the shared API client, so the problem was not the download code or the token. It was the backend permission check.
+
+### Result
+
+The dashboard can show all available courses, and the CSV export permission now matches what the dashboard shows. This removes the confusing `403 Forbidden` error for published courses while keeping unpublished courses protected. I also checked the edited backend route files for syntax errors and confirmed that the route modules load correctly.
+
