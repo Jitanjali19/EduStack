@@ -26,7 +26,7 @@ app.use(
       if (
         isLocalDevelopmentOrigin ||
         origin === process.env.CLIENT_URL ||
-        origin === 'https://edustack-frontend-hazel.vercel.app' ||
+        origin === 'https://edu-stack-one.vercel.app' ||
         origin.endsWith('.vercel.app')
       ) {
         return callback(null, true);
