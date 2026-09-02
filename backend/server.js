@@ -13,12 +13,24 @@ const alertRoutes = require('./routes/alertRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+
 app.use(
   cors({
-    origin: [
-      process.env.CLIENT_URL,
-      'https://edustack-frontend-hazel.vercel.app'
-    ],
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+
+      // Check if origin is the main URL OR ends with .vercel.app (covers all preview URLs)
+      if (
+        origin === process.env.CLIENT_URL ||
+        origin === 'https://edustack-frontend-hazel.vercel.app' ||
+        origin.endsWith('.vercel.app')
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   })
 );

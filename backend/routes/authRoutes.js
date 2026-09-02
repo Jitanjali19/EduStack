@@ -20,7 +20,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Name, email, and password are required' });
     }
 
-    const normalizedRole = role === 'instructor' ? 'instructor' : 'learner';
+    const normalizedRole = 'learner';
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
@@ -97,6 +97,15 @@ router.get('/me', protect, (req, res) => {
       createdAt: req.user.createdAt,
     },
   });
+});
+
+router.get('/instructors', protect, authorize('instructor'), async (req, res) => {
+  try {
+    const instructors = await User.find({ role: 'instructor' }).select('_id name email').sort({ name: 1 });
+    res.json({ instructors });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch instructors' });
+  }
 });
 
 router.get('/instructor-only', protect, authorize('instructor'), (req, res) => {

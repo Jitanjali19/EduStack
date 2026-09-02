@@ -2,7 +2,7 @@ const express = require('express');
 const User = require('../models/User');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -78,7 +78,7 @@ const getDashboardMetrics = async (req, res) => {
   }
 };
 
-router.get('/', protect, getDashboardMetrics);
-router.get('/metrics', protect, getDashboardMetrics);
+router.get('/', protect, authorize('instructor'), getDashboardMetrics);
+router.get('/metrics', protect, authorize('instructor'), getDashboardMetrics);
 
 module.exports = router;

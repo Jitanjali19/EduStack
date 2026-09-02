@@ -6,13 +6,13 @@ import EduStackLogo from '../components/EduStackLogo';
 const RegisterPage = () => {
   const { register, loading } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'learner' });
+  const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const result = await register(form.name, form.email, form.password, form.role);
+    const result = await register(form.name, form.email, form.password, 'learner');
     if (result.success) {
       navigate(result.user.role === 'instructor' ? '/dashboard' : '/courses');
     } else {
@@ -77,35 +77,6 @@ const RegisterPage = () => {
                 placeholder="••••••••"
                 className="w-full bg-slate-800 border border-slate-600 text-white placeholder-slate-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-3">
-                I am joining as a...
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {['learner', 'instructor'].map((role) => (
-                  <button
-                    key={role}
-                    type="button"
-                    onClick={() => setForm({ ...form, role })}
-                    className={`py-3 rounded-lg border text-sm font-semibold capitalize transition-all ${
-                      form.role === role
-                        ? role === 'instructor'
-                          ? 'bg-purple-600/20 border-purple-500 text-purple-300'
-                          : 'bg-sky-600/20 border-sky-500 text-sky-300'
-                        : 'bg-slate-800 border-slate-600 text-slate-400 hover:border-slate-500'
-                    }`}
-                  >
-                    {role === 'learner' ? '🎓 Learner' : '🏫 Instructor'}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-slate-500 mt-2">
-                {form.role === 'instructor'
-                  ? 'You will be able to create and manage courses.'
-                  : 'You will be able to enroll in published courses.'}
-              </p>
             </div>
 
             <button

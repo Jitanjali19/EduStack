@@ -18,14 +18,19 @@ const ALLOWED_STATUS_TRANSITIONS = {
 router.post('/enroll/:courseId', protect, async (req, res) => {
   try {
     const { courseId } = req.params;
-    let targetUserId = req.user._id;
+    let targetUserId;
 
-    if (req.user.role === 'instructor' && req.body.userId) {
+    if (req.user.role === 'instructor') {
+      if (!req.body.userId) {
+        return res.status(400).json({ message: 'Instructor must provide a learner userId' });
+      }
       const targetUser = await User.findById(req.body.userId);
-      if (!targetUser) {
+      if (!targetUser || targetUser.role !== 'learner') {
         return res.status(404).json({ message: 'Target learner not found' });
       }
       targetUserId = targetUser._id;
+    } else {
+      targetUserId = req.user._id;
     }
 
     const course = await Course.findById(courseId);
@@ -35,6 +40,10 @@ router.post('/enroll/:courseId', protect, async (req, res) => {
 
     if (course.status !== 'published') {
       return res.status(400).json({ message: 'Cannot enroll in an unpublished course' });
+    }
+
+    if (req.user.role === 'instructor' && course.instructor.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'You can only enroll learners into your own courses' });
     }
 
     const existingEnrollment = await Enrollment.findOne({
@@ -80,30 +89,66 @@ router.get('/my-courses', protect, async (req, res) => {
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
 
-    const filter = { userId: req.user._id };
-    if (status) {
-      filter.status = status;
-    }
+    const matchFilter = { userId: req.user._id };
+    if (status) matchFilter.status = status;
 
-    let enrollments = await Enrollment.find(filter)
-      .populate({
-        path: 'courseId',
-        populate: { path: 'instructor', select: 'name email' },
-      })
-      .sort({ enrolledAt: -1 });
+    const pipeline = [
+      { $match: matchFilter },
+      {
+        $lookup: {
+          from: 'courses',
+          localField: 'courseId',
+          foreignField: '_id',
+          as: 'course',
+        },
+      },
+      { $unwind: '$course' },
+    ];
 
     if (search && search.trim()) {
-      const term = search.trim().toLowerCase();
-      enrollments = enrollments.filter(
-        (e) =>
-          e.courseId &&
-          (e.courseId.title?.toLowerCase().includes(term) ||
-            e.courseId.category?.toLowerCase().includes(term))
-      );
+      const searchRegex = new RegExp(search.trim(), 'i');
+      pipeline.push({
+        $match: {
+          $or: [{ 'course.title': searchRegex }, { 'course.category': searchRegex }],
+        },
+      });
     }
 
-    const total = enrollments.length;
-    const paginated = enrollments.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+    pipeline.push(
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'course.instructor',
+          foreignField: '_id',
+          as: 'instructor',
+        },
+      },
+      { $unwind: { path: '$instructor', preserveNullAndEmptyArrays: true } },
+      {
+        $set: {
+          'course.instructor': {
+            _id: '$instructor._id',
+            name: '$instructor.name',
+            email: '$instructor.email',
+          },
+        },
+      },
+      { $project: { instructor: 0 } },
+      {
+        $facet: {
+          data: [
+            { $sort: { enrolledAt: -1 } },
+            { $skip: (pageNum - 1) * limitNum },
+            { $limit: limitNum },
+          ],
+          totalCount: [{ $count: 'count' }],
+        },
+      }
+    );
+
+    const [result] = await Enrollment.aggregate(pipeline);
+    const paginated = result?.data || [];
+    const total = result?.totalCount?.[0]?.count || 0;
 
     res.json({
       enrollments: paginated,
@@ -407,7 +452,7 @@ router.post('/bulk-enroll/:courseId', protect, authorize('instructor'), async (r
     for (const email of emailList) {
       const user = await User.findOne({ email });
 
-      if (!user) {
+      if (!user || user.role !== 'learner') {
         unknownCount++;
         results.push({ email, status: 'unknown' });
         continue;

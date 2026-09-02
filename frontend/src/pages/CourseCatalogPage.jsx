@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
@@ -66,9 +66,12 @@ const CourseCatalogPage = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [status, setStatus] = useState('all');
+  const [instructor, setInstructor] = useState('all');
+  const [instructors, setInstructors] = useState([]);
   const [sortBy, setSortBy] = useState('createdAt');
   const [order, setOrder] = useState('desc');
   const [page, setPage] = useState(1);
+  const latestRequest = useRef(0);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -78,23 +81,34 @@ const CourseCatalogPage = () => {
     return () => clearTimeout(timer);
   }, [search]);
 
+  useEffect(() => {
+    if (!isInstructor) return;
+    apiClient.get('/auth/instructors')
+      .then(({ data }) => setInstructors(data.instructors || []))
+      .catch(() => setInstructors([]));
+  }, [isInstructor]);
+
   const fetchCourses = useCallback(async () => {
+    const requestId = ++latestRequest.current;
     setLoading(true);
     try {
       const params = { page, limit: 10, sortBy, order };
       if (debouncedSearch) params.search = debouncedSearch;
       if (category !== 'All') params.category = category;
       if (isInstructor && status !== 'all') params.status = status;
+      if (isInstructor && instructor !== 'all') params.instructor = instructor;
 
       const { data } = await apiClient.get('/courses', { params });
-      setCourses(data.courses || []);
-      setPagination(data.pagination || { total: 0, page: 1, totalPages: 1 });
+      if (requestId === latestRequest.current) {
+        setCourses(data.courses || []);
+        setPagination(data.pagination || { total: 0, page: 1, totalPages: 1 });
+      }
     } catch {
-      setCourses([]);
+      if (requestId === latestRequest.current) setCourses([]);
     } finally {
-      setLoading(false);
+      if (requestId === latestRequest.current) setLoading(false);
     }
-  }, [page, sortBy, order, debouncedSearch, category, status, isInstructor]);
+  }, [page, sortBy, order, debouncedSearch, category, status, instructor, isInstructor]);
 
   useEffect(() => { fetchCourses(); }, [fetchCourses]);
 
@@ -136,6 +150,19 @@ const CourseCatalogPage = () => {
             >
               {STATUSES.map(s => (
                 <option key={s} value={s}>{s === 'all' ? 'All Statuses' : s}</option>
+              ))}
+            </select>
+          )}
+
+          {isInstructor && (
+            <select
+              value={instructor}
+              onChange={(e) => handleFilterChange(setInstructor)(e.target.value)}
+              className="bg-slate-800 border border-slate-600 text-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-sky-500 cursor-pointer"
+            >
+              <option value="all">All Instructors</option>
+              {instructors.map((item) => (
+                <option key={item._id} value={item._id}>{item.name}</option>
               ))}
             </select>
           )}

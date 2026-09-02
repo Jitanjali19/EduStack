@@ -222,7 +222,12 @@ const CourseStudioPage = ({ ownOnly = false }) => {
     setLoading(true);
     try {
       const { data } = await apiClient.get('/courses', {
-        params: { limit: 100, sortBy: 'createdAt', order: 'desc', ...(ownOnly ? { mine: 'true' } : {}) },
+        params: {
+          limit: 100,
+          sortBy: 'createdAt',
+          order: 'desc',
+          ...(ownOnly ? { mine: 'true' } : {}),
+        },
       });
       setCourses(data.courses || []);
     } catch {

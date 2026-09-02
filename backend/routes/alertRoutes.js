@@ -16,7 +16,7 @@ router.get('/', protect, authorize('instructor'), async (req, res) => {
     const enrollments = await Enrollment.find({
       courseId: { $in: courseIds },
       status: 'in_progress',
-      lastActivityAt: { $lte: fourteenDaysAgo },
+      lastActivityAt: { $lt: fourteenDaysAgo },
     })
       .populate('userId', 'name email')
       .populate('courseId', 'title category status');
