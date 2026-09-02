@@ -29,6 +29,13 @@ const seedData = async () => {
       role: 'instructor',
     });
 
+    await User.create({
+      name: 'Platform Admin',
+      email: 'admin@example.com',
+      password: hashedPassword,
+      role: 'admin',
+    });
+
     const learner1 = await User.create({
       name: 'Alex Learner',
       email: 'learner@example.com',
@@ -110,6 +117,7 @@ const seedData = async () => {
 
     console.log('Seed completed successfully');
     console.log('Instructor Demo Credential: instructor@example.com / Password123!');
+    console.log('Admin Demo Credential: admin@example.com / Password123!');
     console.log('Learner Demo Credential: learner@example.com / Password123!');
     process.exit(0);
   } catch (error) {

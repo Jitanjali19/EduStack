@@ -58,6 +58,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         isAuthenticated: !!token && !!user,
         isInstructor: user?.role === 'instructor',
+        isAdmin: user?.role === 'admin',
         isLearner: user?.role === 'learner',
         login,
         register,

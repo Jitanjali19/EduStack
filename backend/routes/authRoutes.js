@@ -1,5 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -84,6 +85,70 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error.message);
     res.status(500).json({ message: 'Server error during login' });
+  }
+});
+
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const email = req.body.email?.toLowerCase().trim();
+    const user = email ? await User.findOne({ email }) : null;
+
+    if (!user) return res.status(404).json({ message: 'No account found with this email.' });
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    user.passwordResetToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    user.passwordResetExpires = Date.now() + 15 * 60 * 1000;
+    await user.save();
+
+    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${rawToken}`;
+    res.json({ message: 'Reset link generated. Open it to set a new password.', resetUrl });
+  } catch (error) {
+    console.error('Forgot password error:', error.message);
+    res.status(500).json({ message: 'Unable to generate reset link.' });
+  }
+});
+
+router.post('/reset-password/:token', async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password || password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(req.params.token).digest('hex');
+    const user = await User.findOne({
+      passwordResetToken: tokenHash,
+      passwordResetExpires: { $gt: Date.now() },
+    });
+    if (!user) return res.status(400).json({ message: 'This reset link is invalid or has expired.' });
+
+    user.password = await bcrypt.hash(password, 10);
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+    res.json({ message: 'Password reset successful. You can now sign in.' });
+  } catch (error) {
+    console.error('Reset password error:', error.message);
+    res.status(500).json({ message: 'Unable to reset password.' });
+  }
+});
+
+router.patch('/password', protect, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword || newPassword.length < 8) {
+      return res.status(400).json({ message: 'Current password and a new password of at least 8 characters are required.' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, req.user.password);
+    if (!isMatch) return res.status(401).json({ message: 'Current password is incorrect.' });
+
+    req.user.password = await bcrypt.hash(newPassword, 10);
+    await req.user.save();
+    res.json({ message: 'Password changed successfully.' });
+  } catch (error) {
+    console.error('Change password error:', error.message);
+    res.status(500).json({ message: 'Unable to change password.' });
   }
 });
 

@@ -14,7 +14,7 @@ const LoginPage = () => {
     setError('');
     const result = await login(form.email, form.password);
     if (result.success) {
-      navigate(result.user.role === 'instructor' ? '/dashboard' : '/courses');
+      navigate(result.user.role === 'admin' ? '/admin' : result.user.role === 'instructor' ? '/dashboard' : '/courses');
     } else {
       setError(result.message);
     }
@@ -73,6 +73,10 @@ const LoginPage = () => {
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
+
+          <p className="mt-4 text-center text-sm">
+            <Link to="/forgot-password" className="font-medium text-sky-400 hover:text-sky-300">Forgot password?</Link>
+          </p>
 
           <p className="text-center text-sm text-slate-500 mt-6">
             Don't have an account?{' '}

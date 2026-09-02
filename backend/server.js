@@ -9,6 +9,7 @@ const lessonRoutes = require('./routes/lessonRoutes');
 const enrollmentRoutes = require('./routes/enrollmentRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const alertRoutes = require('./routes/alertRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,7 +22,9 @@ app.use(
       if (!origin) return callback(null, true);
 
       // Check if origin is the main URL OR ends with .vercel.app (covers all preview URLs)
+      const isLocalDevelopmentOrigin = /^http:\/\/localhost:\d+$/.test(origin);
       if (
+        isLocalDevelopmentOrigin ||
         origin === process.env.CLIENT_URL ||
         origin === 'https://edustack-frontend-hazel.vercel.app' ||
         origin.endsWith('.vercel.app')
@@ -44,6 +47,7 @@ app.use('/api/lessons', lessonRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/alerts', alertRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
   res.json({

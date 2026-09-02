@@ -18,13 +18,20 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    passwordResetToken: String,
+    passwordResetExpires: Date,
     role: {
       type: String,
-      enum: ['instructor', 'learner'],
+      enum: ['admin', 'instructor', 'learner'],
       default: 'learner',
     },
   },
   { timestamps: true }
+);
+
+userSchema.index(
+  { role: 1 },
+  { unique: true, partialFilterExpression: { role: 'admin' } }
 );
 
 module.exports = mongoose.model('User', userSchema);

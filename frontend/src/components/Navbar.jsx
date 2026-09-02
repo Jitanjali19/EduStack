@@ -5,7 +5,7 @@ import apiClient from '../api/apiClient';
 import EduStackLogo from './EduStackLogo';
 
 const Navbar = () => {
-  const { user, isAuthenticated, isInstructor, logout } = useAuth();
+  const { user, isAuthenticated, isInstructor, isAdmin, logout } = useAuth();
   const [alertCount, setAlertCount] = useState(0);
   const navigate = useNavigate();
 
@@ -34,7 +34,11 @@ const Navbar = () => {
               <Link to="/courses" className="text-slate-400 hover:text-white text-sm font-medium transition-colors">
                 Catalog
               </Link>
-              {isInstructor ? (
+              {isAdmin ? (
+                <Link to="/admin" className="text-slate-400 hover:text-white text-sm font-medium transition-colors">
+                  Admin Console
+                </Link>
+              ) : isInstructor ? (
                 <>
                   <Link to="/dashboard" className="text-slate-400 hover:text-white text-sm font-medium transition-colors">
                     Dashboard
@@ -66,7 +70,9 @@ const Navbar = () => {
                 {user?.name}
               </Link>
               <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded tracking-wider ${
-                isInstructor
+                isAdmin
+                  ? 'bg-red-500/20 text-red-300 border border-red-500/40'
+                  : isInstructor
                   ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
                   : 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
               }`}>
