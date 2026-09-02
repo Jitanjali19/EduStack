@@ -138,3 +138,70 @@ The CSV request already sends the login token through the shared API client, so 
 
 The dashboard can show all available courses, and the CSV export permission now matches what the dashboard shows. This removes the confusing `403 Forbidden` error for published courses while keeping unpublished courses protected. I also checked the edited backend route files for syntax errors and confirmed that the route modules load correctly.
 
+## 9. Remove course moderation from Admin
+
+### Prompt
+
+"Admin me se Draft, Publish, Archive, Restore hata do. Ye instructor ka kaam hai. Admin ka kaam
+instructor create karna aur users manage karna hai."
+
+### What I got
+
+The first fix removed the moderation section and course API request from the Admin page. A second
+review showed that the old admin course endpoints still existed in the backend, so a direct API call
+could still let an admin moderate a course.
+
+### What I corrected
+
+I removed the admin course listing and moderation routes as well. The instructor course routes already
+enforce the instructor role and ownership, so the permission model now matches the visible UI.
+
+## 10. Add password recovery without SMTP
+
+### Prompt
+
+"SMTP wala mat karo. Normal rakho: reset link do, phir user new password set kar sake."
+
+### What I got
+
+The first password recovery design expected SMTP variables and `nodemailer`, which was too much setup
+for a local demo and would not work without a mail provider.
+
+### What I corrected
+
+I removed SMTP and `nodemailer`. The backend now creates a random one-time token, stores only its hash
+with a 15-minute expiry, and returns a reset URL. The frontend shows an Open reset link action, and
+the reset page accepts the new password. A logged-in user also has a current-password-verified change
+password form in Profile.
+
+## 11. Fix Vercel refresh routing
+
+### Prompt
+
+"Fix the Vercel SPA routing issue. When `/dashboard` is refreshed, Vercel shows 404 NOT_FOUND. Add
+the proper rewrite to `/index.html` without changing UI or app logic."
+
+### What I got
+
+There was no Vercel configuration in the frontend, so direct access to React Router routes failed even
+though in-app navigation worked.
+
+### What I corrected
+
+I added only `frontend/vercel.json` with a catch-all rewrite to `/index.html`. The existing React, API,
+and authentication code was left unchanged. The Vite production build passed afterward.
+
+## 12. Validation mistakes recorded
+
+### Problem
+
+Some checks first ran from `C:\course-platform` while the relevant `package.json` was inside
+`frontend`, or while the terminal was already inside `backend`, which created paths like
+`backend\backend`.
+
+### Correction
+
+I reran the checks from the correct project directories. Backend syntax checks and the frontend
+production build passed. Full lint still reports older unrelated warnings, so those were documented
+instead of changing unrelated files.
+

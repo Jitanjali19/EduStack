@@ -58,6 +58,17 @@ This document outlines the step-by-step development process, session breakdown, 
 - [x] Schema & architectural documentation synchronization
 - [x] Demo credentials and submission checklist in `SUBMISSION.md`
 
+### Phase 6: Responsibility, Recovery & Deployment Fixes (Completed)
+
+- [x] Removed course Draft/Publish/Archive/Restore controls from the Admin Console.
+- [x] Removed admin course moderation API routes so admins cannot change course lifecycle directly.
+- [x] Kept course lifecycle actions in instructor-owned routes with role and ownership checks.
+- [x] Added logged-in password change with current-password verification.
+- [x] Added forgot-password and reset-password flow using a one-time hashed token.
+- [x] Removed SMTP/nodemailer so the local demo generates a reset link directly.
+- [x] Added Vercel SPA rewrite so direct React Router routes do not return `404 NOT_FOUND`.
+- [x] Updated documentation with the problems, decisions, and validation results.
+
 ### Server-side course listing work
 
 I kept the Courses page small and simple for the user, but made the data work on the server. The page sends the current search, category, status, sort order, page number, and page size to the API. The backend applies these options in MongoDB and sends back only the matching courses for that page.
@@ -107,3 +118,11 @@ We deliberately cut stretch features (quizzes, completion certificates, video wa
 ### 5. What I considered for large data
 
 I deliberately spent time on server-side listing because this is the part that would matter most when the app grows. At small scale, client-side filtering can look easier, but it would create a problem later. A large dataset would make the browser download too much data and make search and sorting slower. The current design gives MongoDB the heavy work and keeps the browser response limited to one page.
+
+### 6. Problems found after the first working version
+
+- **Admin had too much course control**: The Admin Console showed moderation buttons even though instructors should manage their own courses. I removed those controls and the matching admin endpoints, then kept instructor ownership checks in the course routes.
+- **Forgot-password depended on email infrastructure**: SMTP would have required provider settings and credentials just to demonstrate the feature locally. I changed it to return a short-lived reset link directly, with a hashed token stored in MongoDB.
+- **Vercel refresh returned 404**: React Router routes worked after navigating inside the app, but Vercel did not know that `/dashboard` was a client-side route on a fresh request. Adding the frontend rewrite to `/index.html` fixed direct access and refreshes.
+- **Validation commands sometimes ran from the wrong folder**: The package files are inside `frontend` and `backend`, so commands from the repository root gave misleading path errors. Running each command from its owning folder gave the correct result.
+- **Existing lint warnings**: Full frontend lint still reports older unrelated issues in files such as `ActivityLogModal`, `AuthContext`, and `AdminPage`. The changed password and routing files have no diagnostics, and the production build passes.

@@ -58,3 +58,27 @@ This document records key technical decisions made during development, what was 
 - **Chose**: In-modal results view with decoupled parent dashboard metric refresh (only triggering dashboard re-fetch on modal dismissal/Done).
 - **Rejected**: Immediately triggering full-page metric refetch (`fetchMetrics`) upon API response inside `handleSubmit`.
 - **Why**: Goal 7 requires explicitly displaying the outcome per address (`enrolled`, `already_enrolled`, `unknown`). When `fetchMetrics` ran synchronously on API return, the dashboard showed a loading spinner and unmounted the modal before the instructor could inspect the per-learner audit list. Decoupling the review state allows instructors to examine the color-coded results, filter by status, and download the learner progress CSV before closing the modal.
+
+## Decision 10: Course Moderation Belongs to Instructors
+
+- **Chose**: Keep course creation, publishing, archiving, and restoring with the owning instructor.
+- **Rejected**: Giving admins Draft/Publish/Archive/Restore buttons and admin-only course routes.
+- **Why**: The admin's job is to create instructor accounts and manage platform users, while the instructor owns the course content and its lifecycle. I removed the moderation UI and the `/api/admin/courses` routes. Instructor routes check both role and course ownership.
+
+## Decision 11: Password Reset Without SMTP
+
+- **Chose**: Generate a one-time reset link in the API response, with a hashed token and 15-minute expiry.
+- **Rejected**: Adding SMTP configuration that would require a mail provider and credentials for the demo.
+- **Why**: Password recovery needed to work locally without email infrastructure. The database stores only the token hash, the link is short-lived, and the token fields are cleared after use. A real production version should deliver the link through an email provider instead of returning it in the API response.
+
+## Decision 12: Vercel SPA Rewrite
+
+- **Chose**: Add `frontend/vercel.json` with a catch-all rewrite from `/(.*)` to `/index.html`.
+- **Rejected**: Creating separate physical pages for every React Router route.
+- **Why**: Vite produces one frontend entry file and React Router decides the page in the browser. Without the rewrite, opening or refreshing `/dashboard` made Vercel return `404 NOT_FOUND`.
+
+## Decision 13: Focused Validation
+
+- **Chose**: Validate touched files with backend syntax checks, frontend build, and editor diagnostics.
+- **Rejected**: Fixing every existing repository lint warning while working on unrelated features.
+- **Why**: The repository already had broader lint warnings in older files. Those were outside the password and deployment changes, so I recorded them instead of changing unrelated functionality. The production frontend build and backend syntax checks passed for the changes made here.

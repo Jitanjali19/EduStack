@@ -8,69 +8,71 @@ This document describes the schema design, field types, relationships, constrain
 
 ### 1.1 User
 
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `_id` | ObjectId | Primary Key | Unique user identifier |
-| `name` | String | Required, Trimmed | Full name of the user |
-| `email` | String | Required, Unique, Lowercase | User email address used for login and bulk enrollment |
-| `password` | String | Required | Bcrypt hashed password |
-| `role` | String | Enum (`instructor`, `learner`), Default: `learner` | System role |
-| `createdAt` | Date | Auto Timestamp | Account creation timestamp |
-| `updatedAt` | Date | Auto Timestamp | Last modification timestamp |
+| Column                 | Type     | Constraints                                                 | Description                                           |
+| ---------------------- | -------- | ----------------------------------------------------------- | ----------------------------------------------------- |
+| `_id`                  | ObjectId | Primary Key                                                 | Unique user identifier                                |
+| `name`                 | String   | Required, Trimmed                                           | Full name of the user                                 |
+| `email`                | String   | Required, Unique, Lowercase                                 | User email address used for login and bulk enrollment |
+| `password`             | String   | Required                                                    | Bcrypt hashed password                                |
+| `passwordResetToken`   | String   | Optional                                                    | SHA-256 hash of the one-time password reset token     |
+| `passwordResetExpires` | Date     | Optional                                                    | Expiry time for the password reset token              |
+| `role`                 | String   | Enum (`admin`, `instructor`, `learner`), Default: `learner` | System role                                           |
+| `createdAt`            | Date     | Auto Timestamp                                              | Account creation timestamp                            |
+| `updatedAt`            | Date     | Auto Timestamp                                              | Last modification timestamp                           |
 
 ### 1.2 Course
 
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `_id` | ObjectId | Primary Key | Unique course identifier |
-| `title` | String | Required, Trimmed | Course title |
-| `description` | String | Required, Trimmed | Course detailed description |
-| `category` | String | Required, Trimmed | Category string |
-| `status` | String | Enum (`draft`, `published`, `archived`), Default: `draft` | Course lifecycle state |
-| `instructor` | ObjectId | Ref -> User, Required | Foreign key to User document |
-| `createdAt` | Date | Auto Timestamp | Course creation timestamp |
-| `updatedAt` | Date | Auto Timestamp | Last modification timestamp |
+| Column        | Type     | Constraints                                               | Description                  |
+| ------------- | -------- | --------------------------------------------------------- | ---------------------------- |
+| `_id`         | ObjectId | Primary Key                                               | Unique course identifier     |
+| `title`       | String   | Required, Trimmed                                         | Course title                 |
+| `description` | String   | Required, Trimmed                                         | Course detailed description  |
+| `category`    | String   | Required, Trimmed                                         | Category string              |
+| `status`      | String   | Enum (`draft`, `published`, `archived`), Default: `draft` | Course lifecycle state       |
+| `instructor`  | ObjectId | Ref -> User, Required                                     | Foreign key to User document |
+| `createdAt`   | Date     | Auto Timestamp                                            | Course creation timestamp    |
+| `updatedAt`   | Date     | Auto Timestamp                                            | Last modification timestamp  |
 
 ### 1.3 Lesson
 
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `_id` | ObjectId | Primary Key | Unique lesson identifier |
-| `courseId` | ObjectId | Ref -> Course, Required | Foreign key to Course document |
-| `title` | String | Required, Trimmed | Lesson title |
-| `content` | String | Required, Trimmed | Lesson content text or markdown |
-| `position` | Number | Required | Sequential position order inside the course |
-| `createdAt` | Date | Auto Timestamp | Lesson creation timestamp |
-| `updatedAt` | Date | Auto Timestamp | Last modification timestamp |
+| Column      | Type     | Constraints             | Description                                 |
+| ----------- | -------- | ----------------------- | ------------------------------------------- |
+| `_id`       | ObjectId | Primary Key             | Unique lesson identifier                    |
+| `courseId`  | ObjectId | Ref -> Course, Required | Foreign key to Course document              |
+| `title`     | String   | Required, Trimmed       | Lesson title                                |
+| `content`   | String   | Required, Trimmed       | Lesson content text or markdown             |
+| `position`  | Number   | Required                | Sequential position order inside the course |
+| `createdAt` | Date     | Auto Timestamp          | Lesson creation timestamp                   |
+| `updatedAt` | Date     | Auto Timestamp          | Last modification timestamp                 |
 
 ### 1.4 Enrollment (Progress Tracking)
 
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `_id` | ObjectId | Primary Key | Unique enrollment identifier |
-| `userId` | ObjectId | Ref -> User, Required | Foreign key to User document |
-| `courseId` | ObjectId | Ref -> Course, Required | Foreign key to Course document |
-| `status` | String | Enum (`not_started`, `in_progress`, `completed`), Default: `not_started` | Learner progress state |
-| `completedLessons` | Array of ObjectIds | Ref -> Lesson | Denormalized list of completed lesson IDs |
-| `enrolledAt` | Date | Default: Date.now | Timestamp when learner was enrolled |
-| `lastActivityAt` | Date | Default: Date.now | Timestamp of learner's last lesson activity |
-| `completedAt` | Date | Default: null | Timestamp when course was completed |
-| `dismissedAt` | Date | Default: null | Timestamp when instructor dismissed inactivity alert |
-| `createdAt` | Date | Auto Timestamp | Document creation timestamp |
-| `updatedAt` | Date | Auto Timestamp | Document modification timestamp |
+| Column             | Type               | Constraints                                                              | Description                                          |
+| ------------------ | ------------------ | ------------------------------------------------------------------------ | ---------------------------------------------------- |
+| `_id`              | ObjectId           | Primary Key                                                              | Unique enrollment identifier                         |
+| `userId`           | ObjectId           | Ref -> User, Required                                                    | Foreign key to User document                         |
+| `courseId`         | ObjectId           | Ref -> Course, Required                                                  | Foreign key to Course document                       |
+| `status`           | String             | Enum (`not_started`, `in_progress`, `completed`), Default: `not_started` | Learner progress state                               |
+| `completedLessons` | Array of ObjectIds | Ref -> Lesson                                                            | Denormalized list of completed lesson IDs            |
+| `enrolledAt`       | Date               | Default: Date.now                                                        | Timestamp when learner was enrolled                  |
+| `lastActivityAt`   | Date               | Default: Date.now                                                        | Timestamp of learner's last lesson activity          |
+| `completedAt`      | Date               | Default: null                                                            | Timestamp when course was completed                  |
+| `dismissedAt`      | Date               | Default: null                                                            | Timestamp when instructor dismissed inactivity alert |
+| `createdAt`        | Date               | Auto Timestamp                                                           | Document creation timestamp                          |
+| `updatedAt`        | Date               | Auto Timestamp                                                           | Document modification timestamp                      |
 
 **Indexes**: Compound unique index `{ userId: 1, courseId: 1 }` prevents duplicate enrollments.
 
 ### 1.5 ActivityLog
 
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `_id` | ObjectId | Primary Key | Unique log entry identifier |
-| `courseId` | ObjectId | Ref -> Course, Required | Foreign key to Course document |
-| `actorId` | ObjectId | Ref -> User, Required | User who performed the action |
-| `action` | String | Enum (`create`, `edit`, `publish`, `archive`, `restore`, `lesson_add`, `lesson_edit`, `lesson_delete`, `enrolled`, `completed`, `comment`) | Action type |
-| `details` | String | Default: '' | Description of the action |
-| `createdAt` | Date | Immutable Timestamp | Event log timestamp |
+| Column      | Type     | Constraints                                                                                                                                | Description                    |
+| ----------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| `_id`       | ObjectId | Primary Key                                                                                                                                | Unique log entry identifier    |
+| `courseId`  | ObjectId | Ref -> Course, Required                                                                                                                    | Foreign key to Course document |
+| `actorId`   | ObjectId | Ref -> User, Required                                                                                                                      | User who performed the action  |
+| `action`    | String   | Enum (`create`, `edit`, `publish`, `archive`, `restore`, `lesson_add`, `lesson_edit`, `lesson_delete`, `enrolled`, `completed`, `comment`) | Action type                    |
+| `details`   | String   | Default: ''                                                                                                                                | Description of the action      |
+| `createdAt` | Date     | Immutable Timestamp                                                                                                                        | Event log timestamp            |
 
 ---
 
@@ -88,6 +90,7 @@ This document describes the schema design, field types, relationships, constrain
 ## 3. Database vs Application Constraints
 
 ### Database Constraints (MongoDB & Mongoose Schema)
+
 - Unique index on `User.email` prevents duplicate registrations.
 - Compound unique index on `Enrollment.{ userId, courseId }` prevents duplicate course enrollments.
 - Schema enums for `User.role`, `Course.status`, `Enrollment.status`, and `ActivityLog.action`.
@@ -95,11 +98,15 @@ This document describes the schema design, field types, relationships, constrain
 - Mongoose middleware hooks on `ActivityLog` blocking `updateOne`, `updateMany`, `deleteOne`, and `deleteMany` to enforce immutability.
 
 ### Application Constraints (Backend Express Layer)
+
 - **Publishing Rule**: Cannot publish a course with 0 lessons. Verified by `Lesson.countDocuments({ courseId })`.
 - **Progress Machine Rule**: Forward-only transition (`not_started` -> `in_progress` -> `completed`). Rejects backwards or illegal jumps.
 - **Course Completion Validation**: Marking a course completed requires all lessons in the course to be present in `completedLessons`.
 - **Role Permissions**: Learners cannot create/edit courses or view other learners' progress; Instructors cannot enroll in unpublished courses.
 - **Alert Reappearance**: Alerts reappear when `lastActivityAt > dismissedAt` after 14 days of quiet time.
+- **Password Reset**: The reset request creates a random token, stores only its SHA-256 hash, and accepts it only before `passwordResetExpires`. Successful reset clears both reset fields.
+- **Password Change**: A logged-in user must provide the current password before the new password is saved.
+- **Course Ownership**: Instructor course changes require the instructor role and a matching course owner. Admin users do not get course lifecycle endpoints.
 
 ---
 
@@ -116,3 +123,11 @@ This document describes the schema design, field types, relationships, constrain
 3. **Weekly Completion Trend Bucketing**: Calculating 8-week completion trends in JS memory will reach memory limits. Transitioning to a native MongoDB Aggregation Pipeline `$bucket` operation will resolve this.
 
 The course list is designed for this growth from the beginning. MongoDB does the matching, sorting, and pagination, and the API sends only the requested page. This reduces browser memory use, response size, and unnecessary network traffic. The next scale improvement would be indexes for common filters and a text-search index for faster title and description search.
+
+## 6. Password reset note
+
+The reset fields are temporary security fields on `User`, not a separate collection. This keeps the
+flow small for the assignment. Only the token hash is stored, and the raw token is used to build a
+15-minute reset link. The current demo returns that link directly because SMTP was intentionally not
+configured. A production version should deliver the link through an email provider and should avoid
+returning it in the normal API response.

@@ -22,6 +22,7 @@ This project is a course platform for internal training. The main idea is simple
 4. API layer
    - REST endpoints for auth, courses, lessons, enrollments, dashboard, and reports.
    - Central place for role checks like instructor vs learner.
+   - Password recovery uses a one-time hashed token instead of storing a usable reset password.
 
 5. File/document layer
    - Course data and activity history live in MongoDB documents.
@@ -67,6 +68,32 @@ I am not starting with stretch features like quizzes, certificates, discussion t
 - enrollment and progress tracking
 - dashboard + alerts
 - activity log
+
+## Responsibility boundaries
+
+One important correction was made after reviewing the Admin Console. Course Draft, Publish,
+Archive, and Restore actions belong to the instructor who owns the course. They are now removed
+from the Admin UI and from the admin course moderation API routes. The backend course routes check
+both the instructor role and course ownership, so hiding a button is not the only protection.
+
+The admin role is intentionally smaller: an admin creates instructor accounts and reviews users.
+This keeps platform administration separate from day-to-day course authoring.
+
+## Password recovery flow
+
+If a user forgets a password, the frontend sends the email to `POST /api/auth/forgot-password`.
+The backend creates a random token, stores only its SHA-256 hash, and sets a 15-minute expiry. In
+this project there is no SMTP service, so the API returns a local reset link directly on the screen.
+The user opens that link and submits a new password to `POST /api/auth/reset-password/:token`.
+The token is cleared after use. Logged-in users can instead change their password from Profile by
+providing the current password.
+
+## Deployment detail: React Router refreshes
+
+The frontend is a Vite single-page application, so routes such as `/dashboard` are handled by
+React Router in the browser. A direct refresh initially caused a Vercel `404 NOT_FOUND` because
+Vercel looked for a physical `/dashboard` file. `frontend/vercel.json` now rewrites every unknown
+frontend path to `/index.html`, allowing React Router to load the correct screen.
 
 Those are the minimum features that prove the system works. Once the core is stable, stretch ideas can be added without breaking the architecture.
 
