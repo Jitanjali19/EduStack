@@ -11,15 +11,30 @@ const getDashboardMetrics = async (req, res) => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const [totalLearners, publishedCourses, completionsThisMonth, learnersInProgress] = await Promise.all([
-      User.countDocuments({ role: 'learner' }),
-      Course.countDocuments({ status: 'published' }),
-      Enrollment.countDocuments({ status: 'completed', completedAt: { $gte: startOfMonth } }),
-      Enrollment.countDocuments({ status: 'in_progress' }),
+    const [learners, courses] = await Promise.all([
+      User.find({ role: 'learner' }, '_id'),
+      Course.find({}, 'title category status'),
     ]);
+    const learnerIds = learners.map((learner) => learner._id);
+    const courseIds = courses.map((course) => course._id);
 
-    const courses = await Course.find({}, 'title category status');
-    const enrollments = await Enrollment.find({});
+    await Enrollment.deleteMany({
+      $or: [
+        { userId: { $nin: learnerIds } },
+        { courseId: { $nin: courseIds } },
+      ],
+    });
+
+    const enrollments = await Enrollment.find({
+      userId: { $in: learnerIds },
+      courseId: { $in: courseIds },
+    });
+    const totalLearners = learners.length;
+    const publishedCourses = courses.filter((course) => course.status === 'published').length;
+    const completionsThisMonth = enrollments.filter(
+      (enrollment) => enrollment.status === 'completed' && enrollment.completedAt >= startOfMonth
+    ).length;
+    const learnersInProgress = enrollments.filter((enrollment) => enrollment.status === 'in_progress').length;
 
     const courseBreakdown = courses.map((course) => {
       const courseEnrollments = enrollments.filter(

@@ -4,7 +4,6 @@
 
 - **GitHub repository:** https://github.com/Jitanjali19/EduStack
 - **Live application:** https://edu-stack-one.vercel.app
-- **Backend API:** https://edustack-pa9a.onrender.com
 
 ## Notes for the reviewer
 
